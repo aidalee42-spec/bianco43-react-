@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   ChefHat,
@@ -16,12 +16,16 @@ import {
   ChevronDown,
   Menu,
   X,
-  Globe,
-  Share,
   MapPin,
   Phone,
   Mail,
   Clock,
+  Quote,
+  ChevronLeft,
+  ChevronRight,
+  Award,
+  Shield,
+  CheckCircle,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -55,13 +59,13 @@ function FadeInUp({ children, className = "" }: { children: React.ReactNode; cla
 }
 
 /* ─────────────────────────────────────────────
-   Section label  e.g. "OUR MENU"
+   Section label
    ───────────────────────────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 mb-5">
-      <span className="w-8 h-px bg-gold" />
-      <span className="text-[0.65rem] tracking-[0.22em] uppercase text-gold font-medium">
+      <span className="w-8 h-px bg-muted-gold" />
+      <span className="text-[0.65rem] tracking-[0.22em] uppercase text-muted-gold font-medium">
         {children}
       </span>
     </div>
@@ -83,7 +87,54 @@ export default function Home() {
 
   /* ── FAQ accordion ── */
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [formState, setFormState] = useState({ name: "", email: "", phone: "", date: "", guests: "", message: "" });
+
+  /* ── Testimonial carousel ── */
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
+  /* ── Before/After slider ── */
+  const [sliderPos, setSliderPos] = useState(50);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleSliderMove = useCallback((clientX: number) => {
+    if (!sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    setSliderPos((x / rect.width) * 100);
+  }, []);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    handleSliderMove(e.clientX);
+  };
+  const onTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    handleSliderMove(e.touches[0].clientX);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      handleSliderMove(clientX);
+    };
+    const onUp = () => setIsDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onMove);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+    };
+  }, [isDragging, handleSliderMove]);
+
+  /* ── Form ── */
+  const [formState, setFormState] = useState({
+    name: "", email: "", phone: "", eventDate: "", guestCount: "", serviceType: "", message: "",
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormState((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -91,10 +142,9 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { name, email, phone, date, guests, message } = formState;
-    const sub = encodeURIComponent("Booking Enquiry — Bianco43");
+    const sub = encodeURIComponent("Booking & Catering Enquiry — Bianco43");
     const body = encodeURIComponent(
-      `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nDate: ${date}\nGuests: ${guests}\nMessage: ${message}`
+      `Name: ${formState.name}\nEmail: ${formState.email}\nPhone: ${formState.phone}\nDate: ${formState.eventDate}\nGuests: ${formState.guestCount}\nService: ${formState.serviceType}\nMessage: ${formState.message}`
     );
     window.location.href = `mailto:info@bianco43.com?subject=${sub}&body=${body}`;
   };
@@ -102,101 +152,91 @@ export default function Home() {
   const navLinks = [
     { label: "Home", href: "#hero" },
     { label: "About", href: "#about" },
-    { label: "Menu", href: "#menu" },
+    { label: "Services", href: "#services" },
+    { label: "Portfolio", href: "#portfolio" },
     { label: "Pricing", href: "#pricing" },
-    { label: "Gallery", href: "#gallery" },
     { label: "Contact", href: "#contact" },
   ];
 
-  /* ── Services data ── */
+  /* ── Services ── */
   const services = [
     {
-      title: "Private Dining",
-      tagline: "An intimate culinary journey",
-      desc: "Reserve our private dining room for an unforgettable evening. Each course is paired with the finest Italian wines from our cellar.",
-      image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80",
+      title: "Fine Dining",
+      tagline: "An evening to remember",
+      desc: "Experience modern Italian cuisine at its finest. Every dish is crafted by Chef Fabrizio Margarita using the freshest seasonal ingredients from Italy and the British Isles.",
       features: [
-        { icon: ChefHat, text: "Michelin-trained chef" },
-        { icon: Wine, text: "Curated wine pairings" },
-        { icon: Users, text: "Up to 40 guests" },
+        { icon: ChefHat, text: "Michelin-level technique" },
+        { icon: Wine, text: "Curated Italian wine cellar" },
+        { icon: Users, text: "Intimate atmosphere" },
       ],
     },
     {
-      title: "Premium Catering",
-      tagline: "Exceptional cuisine, anywhere",
-      desc: "From corporate galas to intimate celebrations, our catering service brings the Bianco43 experience to your venue across London.",
-      image: "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&q=80",
+      title: "Corporate Catering",
+      tagline: "Impress every guest",
+      desc: "From boardroom lunches to grand galas, our premium catering service transforms your corporate event into an unforgettable culinary experience.",
       features: [
-        { icon: Truck, text: "London-wide delivery" },
-        { icon: CalendarCheck, text: "Full event planning" },
-        { icon: Sparkles, text: "Bespoke menus" },
+        { icon: Truck, text: "London-wide delivery & setup" },
+        { icon: CalendarCheck, text: "Full event coordination" },
+        { icon: Sparkles, text: "Bespoke menu design" },
       ],
     },
     {
       title: "Private Events",
-      tagline: "Celebrate in style",
-      desc: "Host your wedding reception, milestone birthday, or corporate event at our stunning Northumberland Avenue venue or your chosen location.",
-      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
+      tagline: "Celebrate with elegance",
+      desc: "Whether a wedding reception, milestone birthday, or exclusive dinner party, we bring the Bianco43 experience to your chosen venue.",
       features: [
-        { icon: PartyPopper, text: "Celebrations & weddings" },
-        { icon: Utensils, text: "Custom multi-course menu" },
-        { icon: Users, text: "Dedicated event team" },
+        { icon: PartyPopper, text: "Weddings & celebrations" },
+        { icon: Utensils, text: "Custom multi-course menus" },
+        { icon: Users, text: "Dedicated event manager" },
       ],
     },
   ];
 
-  /* ── Gallery images ── */
-  const gallery = [
-    { src: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&q=80", alt: "Plated dish", span: "row-span-2" },
-    { src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80", alt: "Pizza", span: "" },
-    { src: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80", alt: "Salad", span: "" },
-    { src: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80", alt: "Dessert", span: "" },
-    { src: "https://images.unsplash.com/photo-1539735257881-5b7e1e8ee9f8?w=600&q=80", alt: "Pasta", span: "" },
-    { src: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=600&q=80", alt: "Wine", span: "row-span-2" },
-  ];
-
-  /* ── Pricing plans ── */
+  /* ── Pricing ── */
   const plans = [
     {
-      name: "Intimo",
-      price: "£65",
+      name: "Essential Buffet",
+      price: "£45",
       period: "/person",
-      desc: "An intimate tasting experience",
+      desc: "Perfect for casual corporate events and celebrations",
       popular: false,
       features: [
-        { icon: Utensils, text: "3-course set menu" },
-        { icon: Wine, text: "1 glass of prosecco" },
-        { icon: ChefHat, text: "Chef's amuse-bouche" },
-        { icon: Users, text: "Standard seating" },
+        "Selection of 4 antipasti",
+        "Choice of 2 primi piatti",
+        "Seasonal dessert station",
+        "Coffee & tea service",
+        "Standard service staff",
       ],
     },
     {
-      name: "Signatura",
-      price: "£95",
+      name: "Premium Plated",
+      price: "£85",
       period: "/person",
-      desc: "Our most requested experience",
+      desc: "Our most popular tier for weddings and galas",
       popular: true,
       features: [
-        { icon: Utensils, text: "5-course tasting menu" },
-        { icon: Wine, text: "Wine pairing (3 glasses)" },
-        { icon: ChefHat, text: "Chef's table visit" },
-        { icon: Sparkles, text: "Welcome cocktail" },
-        { icon: Users, text: "Premium seating" },
+        "Welcome prosecco reception",
+        "3-course plated menu",
+        "Wine pairing (2 glasses)",
+        "Chef's amuse-bouche",
+        "Dedicated event manager",
+        "Custom menu consultation",
       ],
     },
     {
-      name: "Esclusivo",
-      price: "£165",
+      name: "Elite Private Chef",
+      price: "£150",
       period: "/person",
-      desc: "The ultimate Bianco43 experience",
+      desc: "The ultimate white-glove dining experience",
       popular: false,
       features: [
-        { icon: Utensils, text: "8-course degustation" },
-        { icon: Wine, text: "Full wine pairing" },
-        { icon: ChefHat, text: "Private chef's table" },
-        { icon: Sparkles, text: "Champagne reception" },
-        { icon: CalendarCheck, text: "Priority booking" },
-        { icon: PartyPopper, text: "Complimentary dessert" },
+        "Champagne reception",
+        "6-course degustation menu",
+        "Full sommelier wine pairing",
+        "Private chef tableside service",
+        "Bespoke menu & table styling",
+        "Complimentary digestivo bar",
+        "Post-event photography",
       ],
     },
   ];
@@ -205,42 +245,42 @@ export default function Home() {
   const testimonials = [
     {
       name: "Sophie Harrington",
-      role: "Corporate Events Director",
-      text: "Bianco43 catered our annual gala for 200 guests. The attention to detail and quality of the food was extraordinary. Truly a world-class experience.",
+      role: "Corporate Events Director, Barclays",
+      text: "Bianco43 catered our annual gala for 200 guests. The attention to detail was extraordinary — from the menu design to the table presentation. Truly world-class.",
     },
     {
       name: "James Montague",
       role: "Food Critic, London Review",
-      text: "The tasting menu at Bianco43 is a masterclass in modern Italian cuisine. Every dish tells a story. This is dining as theatre.",
+      text: "Chef Margarita's tasting menu is a masterclass in modern Italian cuisine. Every element tells a story. This is dining as theatre.",
     },
     {
-      name: "Elena Rossi",
-      role: "Private Client",
-      text: "We booked Bianco43 for our wedding reception. From the first consultation to the last course, everything was flawless. Our guests are still talking about it.",
+      name: "Elena & Marco Rossi",
+      role: "Wedding Client",
+      text: "Our wedding reception was flawless. Bianco43's team handled everything with grace and professionalism. Our guests are still raving about the food months later.",
     },
   ];
 
-  /* ── FAQ data ── */
+  /* ── FAQ ── */
   const faqs = [
     {
-      q: "How do I make a reservation?",
-      a: "You can book directly through our online form, call us at +44 20 7946 0430, or visit us at 7 Northumberland Avenue. We recommend booking at least two weeks in advance for weekend dining.",
+      q: "What is your minimum guest count for catering?",
+      a: "Our corporate catering service requires a minimum of 20 guests. For private events and intimate dining, we can accommodate smaller parties starting from 10 guests. Contact us for bespoke arrangements.",
+    },
+    {
+      q: "How far in advance should I book?",
+      a: "We recommend booking at least 3–4 weeks in advance for corporate events and 6–8 weeks for wedding receptions. For intimate dining reservations, 2 weeks' notice is preferred.",
     },
     {
       q: "Do you accommodate dietary restrictions?",
-      a: "Absolutely. Our chefs are happy to accommodate vegetarian, vegan, gluten-free, and other dietary requirements. Please inform us at least 48 hours before your reservation.",
+      a: "Absolutely. Our chefs are experienced in catering to vegetarian, vegan, gluten-free, and allergen-specific requirements. We'll work with you to create a menu that suits all your guests.",
     },
     {
-      q: "What is your cancellation policy?",
-      a: "We require 24 hours' notice for cancellations. Late cancellations may incur a charge of £25 per person. Private event cancellations require 7 days' notice.",
+      q: "What areas do you service for catering?",
+      a: "We provide premium catering across Greater London, with a focus on Westminster, the City, Canary Wharf, and surrounding areas. For events outside London, please enquire for a custom quote.",
     },
     {
-      q: "Do you offer private dining for large groups?",
-      a: "Yes. Our private dining room accommodates up to 40 guests, and we can host larger events of up to 200 guests through our premium catering service. Contact our events team for a custom quote.",
-    },
-    {
-      q: "What is the dress code?",
-      a: "We maintain a smart-casual dress code. For evening dining and special events, we recommend cocktail attire. We want you to feel elegant and comfortable.",
+      q: "Can I arrange a tasting before booking?",
+      a: "Yes. For our Premium Plated and Elite Private Chef packages, we offer a complimentary tasting session for the hosting party (up to 4 guests) at our Northumberland Avenue venue.",
     },
   ];
 
@@ -251,47 +291,44 @@ export default function Home() {
           ════════════════════════════════════ */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "glass-header scrolled shadow-sm" : "bg-transparent"
+          scrolled ? "glass-header scrolled" : "bg-transparent"
         }`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-8 h-16 md:h-20">
-          {/* Logo */}
           <a href="#hero" className="flex items-center gap-2">
-            <span className="font-serif text-xl md:text-2xl tracking-[0.04em] text-charcoal">
-              Bianco<span className="text-gold">43</span>
+            <span className="font-serif text-xl md:text-2xl tracking-[0.04em] text-warm-cream">
+              Bianco<span className="text-muted-gold">43</span>
             </span>
           </a>
 
-          {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-8" aria-label="Main navigation">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm tracking-[0.12em] uppercase text-charcoal/70 hover:text-gold transition-colors duration-300 relative after:absolute after:bottom-[-4px] after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full"
+                className="text-sm tracking-[0.12em] uppercase text-warm-cream/60 hover:text-muted-gold transition-colors duration-300 relative after:absolute after:bottom-[-4px] after:left-0 after:h-px after:w-0 after:bg-muted-gold after:transition-all after:duration-300 hover:after:w-full"
               >
                 {link.label}
               </a>
             ))}
             <a
               href="#contact"
-              className="bg-gold hover:bg-gold-dark text-charcoal text-xs tracking-[0.15em] uppercase font-medium px-6 py-2.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(201,168,76,0.4)]"
+              className="bg-muted-gold hover:bg-muted-gold-dark text-near-black text-xs tracking-[0.15em] uppercase font-medium px-6 py-2.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
             >
-              Reserve a Table
+              Book a Table
             </a>
           </nav>
 
-          {/* Mobile toggle */}
           <div className="flex items-center gap-4 lg:hidden">
             <a
               href="#contact"
-              className="bg-gold text-charcoal text-[0.65rem] tracking-[0.15em] uppercase font-medium px-4 py-2 rounded-sm"
+              className="bg-muted-gold text-near-black text-[0.65rem] tracking-[0.15em] uppercase font-medium px-4 py-2 rounded-sm"
             >
               Book
             </a>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="text-charcoal p-1"
+              className="text-warm-cream p-1"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
             >
@@ -302,7 +339,7 @@ export default function Home() {
 
         {/* Mobile overlay */}
         <div
-          className={`lg:hidden fixed inset-0 top-16 bg-cream-light z-40 flex flex-col items-center justify-center gap-8 transition-all duration-400 ${
+          className={`lg:hidden fixed inset-0 top-16 bg-near-black z-40 flex flex-col items-center justify-center gap-8 transition-all duration-400 ${
             mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         >
@@ -311,7 +348,7 @@ export default function Home() {
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className="text-xl tracking-[0.15em] uppercase text-charcoal/80 hover:text-gold transition-colors"
+              className="text-xl tracking-[0.15em] uppercase text-warm-cream/70 hover:text-muted-gold transition-colors"
             >
               {link.label}
             </a>
@@ -319,9 +356,9 @@ export default function Home() {
           <a
             href="#contact"
             onClick={() => setMobileOpen(false)}
-            className="bg-gold text-charcoal text-sm tracking-[0.15em] uppercase font-medium px-8 py-3 rounded-sm mt-4"
+            className="bg-muted-gold text-near-black text-sm tracking-[0.15em] uppercase font-medium px-8 py-3 rounded-sm mt-4"
           >
-            Reserve a Table
+            Book a Table
           </a>
         </div>
       </header>
@@ -332,45 +369,47 @@ export default function Home() {
             ════════════════════════════════════ */}
         <section
           id="hero"
-          className="relative min-h-screen flex items-center bg-charcoal overflow-hidden"
+          className="relative min-h-screen flex items-center overflow-hidden"
         >
-          {/* Background image with overlay */}
           <div className="absolute inset-0">
             <Image
               src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920&q=80"
               alt=""
               fill
-              className="object-cover opacity-40"
+              className="object-cover opacity-50"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/70 to-charcoal/50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-bg/95 via-dark-bg/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-dark-bg/60 via-transparent to-transparent" />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-32 pb-24 md:pt-40 md:pb-32">
             <FadeInUp>
-              {/* Trust badges */}
               <div className="flex flex-wrap gap-4 mb-8">
-                <span className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.2em] uppercase text-gold/80 border border-gold/20 px-3 py-1.5 rounded-sm">
-                  <Star size={10} className="fill-gold text-gold" /> Michelin Recommended
+                <span className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.2em] uppercase text-muted-gold/80 border border-muted-gold/20 px-3 py-1.5 rounded-sm">
+                  <Award size={10} className="text-muted-gold" /> Award-Winning Catering
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.2em] uppercase text-gold/80 border border-gold/20 px-3 py-1.5 rounded-sm">
-                  <Star size={10} className="fill-gold text-gold" /> Award-Winning Catering
+                <span className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.2em] uppercase text-muted-gold/80 border border-muted-gold/20 px-3 py-1.5 rounded-sm">
+                  <Shield size={10} className="text-muted-gold" /> Michelin Recommended
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.2em] uppercase text-muted-gold/80 border border-muted-gold/20 px-3 py-1.5 rounded-sm">
+                  <CheckCircle size={10} className="text-muted-gold" /> 500+ Events
                 </span>
               </div>
             </FadeInUp>
 
             <FadeInUp>
-              <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-cream leading-[1.1] max-w-4xl mb-6">
+              <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-warm-cream leading-[1.1] max-w-4xl mb-6">
                 Authentic Italian{" "}
                 <span className="gold-gradient">Fine Dining</span>{" "}
-                in the Heart of Westminster
+                & Premium Catering
               </h1>
             </FadeInUp>
 
             <FadeInUp>
-              <p className="text-lg md:text-xl text-cream/60 max-w-2xl mb-10 leading-relaxed font-light">
-                Experience the artistry of modern Italian cuisine at 7 Northumberland Avenue.
-                From intimate dinners to grand celebrations, every moment is crafted with passion.
+              <p className="text-lg md:text-xl text-warm-grey max-w-2xl mb-10 leading-relaxed">
+                Experience the artistry of Chef Fabrizio Margarita at 7 Northumberland Avenue.
+                From intimate dinners to grand corporate events — every moment is crafted with passion.
               </p>
             </FadeInUp>
 
@@ -378,97 +417,100 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row items-start gap-4">
                 <a
                   href="#contact"
-                  className="bg-gold hover:bg-gold-dark text-charcoal text-sm tracking-[0.15em] uppercase font-medium px-8 py-3.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_24px_rgba(201,168,76,0.5)] inline-flex items-center gap-2"
+                  className="bg-muted-gold hover:bg-muted-gold-dark text-near-black text-sm tracking-[0.15em] uppercase font-medium px-8 py-3.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_24px_rgba(212,175,55,0.5)] inline-flex items-center gap-2 shadow-lg shadow-muted-gold/20"
                 >
-                  Reserve Your Experience <ArrowRight size={14} />
+                  Book a Table <ArrowRight size={14} />
                 </a>
                 <a
-                  href="#menu"
-                  className="border border-cream/20 text-cream/80 hover:text-gold hover:border-gold/50 text-sm tracking-[0.15em] uppercase font-medium px-8 py-3.5 rounded-sm transition-all duration-300 inline-flex items-center gap-2"
+                  href="#pricing"
+                  className="border border-warm-cream/15 text-warm-cream/70 hover:text-muted-gold hover:border-muted-gold/40 text-sm tracking-[0.15em] uppercase font-medium px-8 py-3.5 rounded-sm transition-all duration-300"
                 >
-                  Explore Our Menu
+                  View Catering Packages
                 </a>
               </div>
             </FadeInUp>
 
-            {/* Trust line */}
             <FadeInUp>
-              <div className="mt-16 flex flex-wrap items-center gap-8 text-cream/40 text-xs tracking-[0.12em] uppercase">
-                <span>Featured in</span>
-                <span className="text-cream/60 font-serif text-lg italic">The Times</span>
-                <span className="w-px h-4 bg-cream/10" />
-                <span className="text-cream/60 font-serif text-lg italic">Michelin Guide</span>
-                <span className="w-px h-4 bg-cream/10" />
-                <span className="text-cream/60 font-serif text-lg italic">Tatler</span>
+              <div className="mt-16 flex flex-wrap items-center gap-8 text-warm-cream/30 text-xs tracking-[0.12em] uppercase">
+                <span>Trusted by</span>
+                <span className="text-warm-cream/50 font-serif text-lg italic">Barclays</span>
+                <span className="w-px h-4 bg-warm-cream/10" />
+                <span className="text-warm-cream/50 font-serif text-lg italic">The Ritz</span>
+                <span className="w-px h-4 bg-warm-cream/10" />
+                <span className="text-warm-cream/50 font-serif text-lg italic">Bloomberg</span>
+                <span className="w-px h-4 bg-warm-cream/10" />
+                <span className="text-warm-cream/50 font-serif text-lg italic">LSE</span>
               </div>
             </FadeInUp>
           </div>
         </section>
 
         {/* ════════════════════════════════════
-            ABOUT
+            ABOUT US
             ════════════════════════════════════ */}
-        <section id="about" className="py-24 md:py-32 bg-cream-light">
+        <section id="about" className="py-24 md:py-32 bg-near-black">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
-              {/* Image side */}
+            <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+              <FadeInUp>
+                <SectionLabel>About Us</SectionLabel>
+                <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-8">
+                  The Man Behind{" "}
+                  <span className="gold-gradient">Bianco43</span>
+                </h2>
+                <div className="space-y-5 text-warm-cream/55 leading-relaxed">
+                  <p>
+                    <strong className="text-warm-cream/80 font-medium">Fabrizio Margarita</strong> is the heart and soul
+                    of Bianco43. With over 25 years of culinary mastery — from Michelin-starred kitchens in Milan to
+                    London&apos;s most prestigious venues — he brings an uncompromising commitment to quality.
+                  </p>
+                  <p>
+                    Every dish that leaves our kitchen reflects a philosophy rooted in simplicity and respect for
+                    the ingredient. We source the finest seasonal produce from small-batch Italian producers and
+                    artisan British growers, ensuring each bite tells a story of provenance and passion.
+                  </p>
+                  <p>
+                    Whether you&apos;re joining us for an intimate dinner or entrusting us with your company&apos;s
+                    most important celebration, Fabrizio and his team deliver an experience that transcends
+                    expectations. This isn&apos;t just food — it&apos;s our legacy.
+                  </p>
+                </div>
+                <div className="mt-10 flex flex-wrap gap-8">
+                  <div>
+                    <p className="text-2xl font-serif text-muted-gold">25+</p>
+                    <p className="text-xs tracking-[0.15em] uppercase text-warm-grey mt-1">Years Experience</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-serif text-muted-gold">500+</p>
+                    <p className="text-xs tracking-[0.15em] uppercase text-warm-grey mt-1">Events Catered</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-serif text-muted-gold">★ 4.9</p>
+                    <p className="text-xs tracking-[0.15em] uppercase text-warm-grey mt-1">Average Rating</p>
+                  </div>
+                </div>
+                <a
+                  href="#contact"
+                  className="mt-8 inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase text-muted-gold hover:text-muted-gold-light font-medium transition-colors"
+                >
+                  Meet Chef Fabrizio <ArrowRight size={14} />
+                </a>
+              </FadeInUp>
+
               <FadeInUp>
                 <div className="relative">
                   <div className="relative overflow-hidden rounded-sm">
                     <Image
                       src="/about-chef.jpg"
-                      alt="Chef Fabrizio Margarita at Bianco43"
+                      alt="Chef Fabrizio Margarita — Owner & Managing Director of Bianco43"
                       width={640}
                       height={800}
-                      className="w-full h-[500px] md:h-[600px] object-cover"
+                      className="w-full h-[550px] md:h-[650px] object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-near-black/50 to-transparent" />
                   </div>
-                  {/* Floating stat card */}
-                  <div className="absolute -bottom-6 -right-6 bg-charcoal text-cream p-6 rounded-sm max-w-[180px] shadow-xl">
-                    <p className="text-3xl font-serif text-gold mb-1">25+</p>
-                    <p className="text-[0.65rem] tracking-[0.2em] uppercase text-cream/60 leading-relaxed">
-                      Years of culinary excellence
-                    </p>
-                  </div>
-                </div>
-              </FadeInUp>
-
-              {/* Text side */}
-              <FadeInUp>
-                <SectionLabel>Our Story</SectionLabel>
-                <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-8">
-                  Where Italian Heritage Meets{" "}
-                  <span className="gold-gradient">Modern Luxury</span>
-                </h2>
-                <div className="space-y-5 text-charcoal/65 leading-relaxed">
-                  <p>
-                    Founded by acclaimed chef <strong className="text-charcoal/85 font-medium">Fabrizio Margarita</strong>,
-                    Bianco43 brings the soul of authentic Italian cuisine to one of London&apos;s most prestigious addresses.
-                    Every dish is a celebration of tradition, reimagined through a contemporary lens.
-                  </p>
-                  <p>
-                    Our kitchen sources the finest seasonal ingredients from small-batch producers across Italy and
-                    the British Isles. From hand-rolled pasta in Emilia-Romagna to organic herbs from our own rooftop
-                    garden — every element tells a story of provenance and passion.
-                  </p>
-                  <p>
-                    Whether you join us for an intimate dinner or trust us to cater your most important celebration,
-                    you&apos;ll experience the same dedication: flawless technique, bold flavours, and genuine hospitality.
-                  </p>
-                </div>
-                <div className="mt-8 flex flex-wrap gap-8">
-                  <div>
-                    <p className="text-2xl font-serif text-gold">10,000+</p>
-                    <p className="text-xs tracking-[0.15em] uppercase text-charcoal/50 mt-1">Guests Served</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-serif text-gold">150+</p>
-                    <p className="text-xs tracking-[0.15em] uppercase text-charcoal/50 mt-1">Events Catered</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-serif text-gold">★4.9</p>
-                    <p className="text-xs tracking-[0.15em] uppercase text-charcoal/50 mt-1">Guest Rating</p>
+                  <div className="absolute -bottom-5 -left-5 bg-dark-bg border border-light-border text-warm-cream p-5 rounded-sm max-w-[200px]">
+                    <p className="text-xs tracking-[0.15em] uppercase text-muted-gold mb-1">Owner / MD</p>
+                    <p className="font-serif text-lg text-warm-cream">Fabrizio Margarita</p>
                   </div>
                 </div>
               </FadeInUp>
@@ -477,62 +519,44 @@ export default function Home() {
         </section>
 
         {/* ════════════════════════════════════
-            MENU / SERVICES
+            SERVICES GRID
             ════════════════════════════════════ */}
-        <section id="menu" className="py-24 md:py-32 bg-cream">
+        <section id="services" className="py-24 md:py-32 bg-dark-bg">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <FadeInUp className="text-center mb-16">
               <SectionLabel>Our Services</SectionLabel>
-              <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-6">
-                A Complete{" "}
-                <span className="gold-gradient">Culinary Experience</span>
+              <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-6">
+                Three Pillars of{" "}
+                <span className="gold-gradient">Excellence</span>
               </h2>
-              <p className="max-w-2xl mx-auto text-charcoal/65 leading-relaxed">
-                From our dining room to your venue, every experience is crafted with the same
-                dedication to quality, elegance, and authentic Italian flavour.
+              <p className="max-w-2xl mx-auto text-warm-cream/50 leading-relaxed">
+                Whether dining in, catering out, or celebrating big — we deliver an uncompromising standard of quality.
               </p>
             </FadeInUp>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6">
               {services.map((service, i) => (
                 <FadeInUp key={service.title}>
-                  <div className="group bg-white rounded-sm overflow-hidden border border-border-light transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-gold/30 hover:shadow-gold/5">
-                    {/* Image header */}
-                    <div className="relative h-52 overflow-hidden">
-                      <Image
-                        src={service.image}
-                        alt={service.title}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/50 via-transparent to-transparent" />
+                  <div className="group bg-dark-bg border border-light-border hover:border-muted-gold/30 rounded-sm p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-lg hover:shadow-muted-gold/5">
+                    <div className="w-12 h-12 rounded-sm border border-light-border group-hover:border-muted-gold/30 flex items-center justify-center mb-6 transition-colors">
+                      <ChefHat size={20} className="text-muted-gold" />
                     </div>
-                    {/* Content */}
-                    <div className="p-6 md:p-8">
-                      <p className="text-xs tracking-[0.2em] uppercase text-gold font-medium mb-1">
-                        {service.tagline}
-                      </p>
-                      <h3 className="font-serif text-2xl text-charcoal mb-3">{service.title}</h3>
-                      <p className="text-sm text-charcoal/65 leading-relaxed mb-6">{service.desc}</p>
-                      {/* Features */}
-                      <div className="space-y-2.5 mb-6">
-                        {service.features.map((feat) => {
-                          const Icon = feat.icon;
-                          return (
-                            <div key={feat.text} className="flex items-center gap-3 text-sm text-charcoal/60">
-                              <Icon size={14} className="text-gold shrink-0" />
-                              <span>{feat.text}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <a
-                        href="#contact"
-                        className="inline-flex items-center gap-2 text-xs tracking-[0.15em] uppercase text-charcoal/70 hover:text-gold font-medium transition-colors"
-                      >
-                        Enquire Now <ArrowRight size={12} />
-                      </a>
-                    </div>
+                    <p className="text-xs tracking-[0.2em] uppercase text-muted-gold font-medium mb-2">
+                      {service.tagline}
+                    </p>
+                    <h3 className="font-serif text-2xl text-warm-cream mb-4">{service.title}</h3>
+                    <p className="text-sm text-warm-cream/50 leading-relaxed mb-6">{service.desc}</p>
+                    <ul className="space-y-2.5">
+                      {service.features.map((feat) => {
+                        const Icon = feat.icon;
+                        return (
+                          <li key={feat.text} className="flex items-center gap-3 text-sm text-warm-cream/45">
+                            <Icon size={14} className="text-muted-gold shrink-0" />
+                            <span>{feat.text}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 </FadeInUp>
               ))}
@@ -541,191 +565,173 @@ export default function Home() {
         </section>
 
         {/* ════════════════════════════════════
-            GALLERY
+            PORTFOLIO — Before/After Slider
             ════════════════════════════════════ */}
-        <section id="gallery" className="py-24 md:py-32 bg-cream-light">
+        <section id="portfolio" className="py-24 md:py-32 bg-near-black">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <FadeInUp className="text-center mb-16">
-              <SectionLabel>Gallery</SectionLabel>
-              <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-6">
-                A Feast for the{" "}
-                <span className="gold-gradient">Eyes</span>
+              <SectionLabel>Portfolio</SectionLabel>
+              <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-6">
+                From Empty Space to{" "}
+                <span className="gold-gradient">Extraordinary Event</span>
               </h2>
-              <p className="max-w-2xl mx-auto text-charcoal/65 leading-relaxed">
-                Every dish at Bianco43 is a work of art. Browse our visual journey through
-                flavours, textures, and unforgettable moments.
+              <p className="max-w-2xl mx-auto text-warm-cream/50 leading-relaxed">
+                Drag the slider to reveal how we transform any venue into a stunning culinary experience.
               </p>
             </FadeInUp>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 auto-rows-[180px] md:auto-rows-[220px]">
-              {gallery.map((item) => (
-                <FadeInUp key={item.alt}>
-                  <div className={`relative overflow-hidden rounded-sm group cursor-pointer ${item.span || ""}`}>
-                    <Image
-                      src={item.src}
-                      alt={item.alt}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-charcoal/0 group-hover:bg-charcoal/30 transition-all duration-300 flex items-center justify-center">
-                      <span className="opacity-0 group-hover:opacity-100 text-cream text-sm tracking-[0.15em] uppercase transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                        View
-                      </span>
-                    </div>
+            <FadeInUp>
+              <div
+                ref={sliderRef}
+                className="relative w-full h-[400px] md:h-[500px] rounded-sm overflow-hidden cursor-ew-resize select-none"
+                onMouseDown={onMouseDown}
+                onTouchStart={onTouchStart}
+              >
+                {/* After image (full) */}
+                <Image
+                  src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200&q=80"
+                  alt="Transformed event setup"
+                  fill
+                  className="object-cover pointer-events-none"
+                  draggable={false}
+                />
+                {/* Before image (clipped) */}
+                <div
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                >
+                  <Image
+                    src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1200&q=80"
+                    alt="Empty venue before setup"
+                    fill
+                    className="object-cover pointer-events-none"
+                    draggable={false}
+                  />
+                </div>
+                {/* Labels */}
+                <div className="absolute top-4 left-4 bg-near-black/80 text-warm-cream text-xs tracking-[0.15em] uppercase px-3 py-1.5 rounded-sm pointer-events-none">
+                  Empty Venue
+                </div>
+                <div className="absolute top-4 right-4 bg-near-black/80 text-muted-gold text-xs tracking-[0.15em] uppercase px-3 py-1.5 rounded-sm pointer-events-none">
+                  Transformed
+                </div>
+                {/* Slider handle */}
+                <div
+                  className="absolute top-0 bottom-0 w-1 bg-muted-gold cursor-ew-resize pointer-events-none"
+                  style={{ left: `${sliderPos}%` }}
+                >
+                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-muted-gold flex items-center justify-center shadow-lg pointer-events-none">
+                    <span className="text-near-black text-xs font-bold">&larr;&rarr;</span>
                   </div>
-                </FadeInUp>
-              ))}
-            </div>
+                </div>
+              </div>
+            </FadeInUp>
+
+            <FadeInUp>
+              <div className="mt-12 text-center">
+                <a
+                  href="#contact"
+                  className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase text-muted-gold hover:text-muted-gold-light font-medium transition-colors"
+                >
+                  See Our Full Portfolio <ArrowRight size={14} />
+                </a>
+              </div>
+            </FadeInUp>
           </div>
         </section>
 
         {/* ════════════════════════════════════
-            PRICING
+            PRICING / CATERING TIERS
             ════════════════════════════════════ */}
-        <section id="pricing" className="py-24 md:py-32 bg-cream">
+        <section id="pricing" className="py-24 md:py-32 bg-dark-bg">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <FadeInUp className="text-center mb-16">
-              <SectionLabel>Pricing</SectionLabel>
-              <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-6">
+              <SectionLabel>Catering Packages</SectionLabel>
+              <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-6">
                 Choose Your{" "}
                 <span className="gold-gradient">Experience</span>
               </h2>
-              <p className="max-w-2xl mx-auto text-charcoal/65 leading-relaxed">
-                From an intimate tasting to a grand degustation — find the perfect menu for your evening.
+              <p className="max-w-2xl mx-auto text-warm-cream/50 leading-relaxed">
+                From elegant buffets to white-glove private chef service — find the perfect tier for your event.
               </p>
             </FadeInUp>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {plans.map((plan) => {
-                const Icon = plan.features[0]?.icon || Utensils;
-                return (
-                  <FadeInUp key={plan.name}>
-                    <div
-                      className={`relative bg-white rounded-sm border ${
-                        plan.popular ? "border-gold/40 shadow-lg shadow-gold/5" : "border-border-light"
-                      } p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl`}
-                    >
-                      {plan.popular && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-charcoal text-[0.55rem] tracking-[0.2em] uppercase font-semibold px-4 py-1 rounded-sm">
-                          Most Popular
-                        </div>
-                      )}
-
-                      <div className="mb-6">
-                        <Icon size={22} className="text-gold mb-4" />
-                        <h3 className="font-serif text-2xl text-charcoal mb-2">{plan.name}</h3>
-                        <p className="text-sm text-charcoal/55">{plan.desc}</p>
-                      </div>
-
-                      <div className="mb-8">
-                        <span className="font-serif text-4xl text-charcoal">{plan.price}</span>
-                        <span className="text-sm text-charcoal/45 ml-1">{plan.period}</span>
-                      </div>
-
-                      <ul className="space-y-3 mb-8">
-                        {plan.features.map((feat) => {
-                          const FIcon = feat.icon;
-                          return (
-                            <li key={feat.text} className="flex items-start gap-3 text-sm text-charcoal/65">
-                              <FIcon size={14} className="text-gold shrink-0 mt-0.5" />
-                              <span>{feat.text}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-
-                      <a
-                        href="#contact"
-                        className={`block w-full text-center text-sm tracking-[0.15em] uppercase font-medium py-3 rounded-sm transition-all duration-300 ${
-                          plan.popular
-                            ? "bg-green hover:bg-green-light text-cream"
-                            : "border border-charcoal/15 text-charcoal/70 hover:bg-green hover:text-cream hover:border-green"
-                        }`}
-                      >
-                        {plan.popular ? "Book Now" : "Select Experience"}
-                      </a>
-                    </div>
-                  </FadeInUp>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════
-            TESTIMONIALS — Marquee
-            ════════════════════════════════════ */}
-        <section className="py-24 md:py-32 bg-cream-light overflow-hidden relative">
-          {/* SVG pattern background */}
-          <div className="absolute inset-0 opacity-[0.03]" aria-hidden="true">
-            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="testimonial-dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1" fill="#1a1c1e" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#testimonial-dots)" />
-            </svg>
-          </div>
-
-          <div className="relative z-10">
-            <FadeInUp className="text-center mb-14 px-6">
-              <SectionLabel>Testimonials</SectionLabel>
-              <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15]">
-                What Our <span className="gold-gradient">Guests Say</span>
-              </h2>
-            </FadeInUp>
-
-            <div className="group">
-              <div className="flex gap-6 animate-marquee hover:[animation-play-state:paused] w-max">
-                {/* Triplicated for seamless loop */}
-                {[...testimonials, ...testimonials, ...testimonials].map((t, i) => (
+              {plans.map((plan) => (
+                <FadeInUp key={plan.name}>
                   <div
-                    key={`${t.name}-${i}`}
-                    className="w-[340px] md:w-[400px] shrink-0 bg-white rounded-sm p-6 md:p-8 border border-border-light flex flex-col"
+                    className={`relative rounded-sm border ${
+                      plan.popular
+                        ? "border-muted-gold/40 scale-[1.02] bg-dark-bg shadow-xl shadow-muted-gold/5"
+                        : "border-light-border bg-dark-bg"
+                    } p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl`}
                   >
-                    <div className="flex gap-1 mb-5">
-                      {[...Array(5)].map((_, s) => (
-                        <Star key={s} size={12} className="fill-gold text-gold" />
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-muted-gold text-near-black text-[0.55rem] tracking-[0.2em] uppercase font-semibold px-4 py-1 rounded-sm">
+                        Most Popular
+                      </div>
+                    )}
+
+                    <div className="mb-6">
+                      <h3 className="font-serif text-2xl text-warm-cream mb-2">{plan.name}</h3>
+                      <p className="text-sm text-warm-cream/45">{plan.desc}</p>
+                    </div>
+
+                    <div className="mb-8">
+                      <span className="font-serif text-4xl text-muted-gold">{plan.price}</span>
+                      <span className="text-sm text-warm-cream/40 ml-1">{plan.period}</span>
+                    </div>
+
+                    <ul className="space-y-3 mb-8">
+                      {plan.features.map((feat) => (
+                        <li key={feat} className="flex items-start gap-3 text-sm text-warm-cream/55">
+                          <CheckCircle size={14} className="text-muted-gold shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
                       ))}
-                    </div>
-                    <blockquote className="text-sm md:text-base text-charcoal/70 leading-relaxed flex-1 italic">
-                      &ldquo;{t.text}&rdquo;
-                    </blockquote>
-                    <div className="mt-5 pt-5 border-t border-border-light">
-                      <p className="text-sm font-medium text-charcoal">{t.name}</p>
-                      <p className="text-xs text-charcoal/45 tracking-[0.1em]">{t.role}</p>
-                    </div>
+                    </ul>
+
+                    <a
+                      href="#contact"
+                      className={`block w-full text-center text-sm tracking-[0.15em] uppercase font-medium py-3 rounded-sm transition-all duration-300 ${
+                        plan.popular
+                          ? "bg-muted-gold text-near-black hover:bg-muted-gold-dark hover:shadow-[0_0_20px_rgba(212,175,55,0.3)]"
+                          : "border border-warm-cream/15 text-warm-cream/70 hover:bg-muted-gold hover:text-near-black hover:border-muted-gold"
+                      }`}
+                    >
+                      {plan.popular ? "Get a Quote" : "Enquire Now"}
+                    </a>
                   </div>
-                ))}
-              </div>
+                </FadeInUp>
+              ))}
             </div>
           </div>
         </section>
 
         {/* ════════════════════════════════════
-            FAQ
+            FAQ & SOCIAL PROOF
             ════════════════════════════════════ */}
-        <section id="faq" className="py-24 md:py-32 bg-cream">
-          <div className="max-w-3xl mx-auto px-6 lg:px-8">
+        <section id="faq" className="py-24 md:py-32 bg-near-black">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            {/* FAQ */}
             <FadeInUp className="text-center mb-16">
               <SectionLabel>FAQ</SectionLabel>
-              <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-6">
+              <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-6">
                 Questions?{" "}
-                <span className="gold-gradient">We&apos;ve Answers</span>
+                <span className="gold-gradient">Answered.</span>
               </h2>
-              <p className="max-w-2xl mx-auto text-charcoal/65 leading-relaxed">
-                Everything you need to know before your visit. If you don&apos;t see your question here,
-                please don&apos;t hesitate to contact us.
+              <p className="max-w-2xl mx-auto text-warm-cream/50 leading-relaxed">
+                Everything you need to know before booking. Don&apos;t see your question? Reach out.
               </p>
             </FadeInUp>
 
-            <div className="space-y-3">
-              {faqs.map((faq, i) => (
-                <FadeInUp key={i}>
+            <FadeInUp>
+              <div className="max-w-3xl mx-auto space-y-3 mb-24">
+                {faqs.map((faq, i) => (
                   <div
-                    className={`bg-white rounded-sm border ${
-                      openFaq === i ? "border-gold/40" : "border-border-light"
+                    key={i}
+                    className={`rounded-sm border ${
+                      openFaq === i ? "border-muted-gold/30" : "border-light-border"
                     } transition-all duration-300`}
                   >
                     <button
@@ -733,10 +739,10 @@ export default function Home() {
                       className="w-full flex items-center justify-between px-6 py-5 text-left"
                       aria-expanded={openFaq === i}
                     >
-                      <span className="text-sm md:text-base font-medium text-charcoal pr-4">{faq.q}</span>
+                      <span className="text-sm md:text-base font-medium text-warm-cream pr-4">{faq.q}</span>
                       <ChevronDown
                         size={16}
-                        className={`text-gold shrink-0 transition-transform duration-300 ${
+                        className={`text-muted-gold shrink-0 transition-transform duration-300 ${
                           openFaq === i ? "rotate-180" : ""
                         }`}
                       />
@@ -746,78 +752,163 @@ export default function Home() {
                         openFaq === i ? "max-h-80 opacity-100" : "max-h-0 opacity-0"
                       }`}
                     >
-                      <p className="px-6 pb-5 text-sm text-charcoal/65 leading-relaxed">{faq.a}</p>
+                      <p className="px-6 pb-5 text-sm text-warm-cream/55 leading-relaxed">{faq.a}</p>
                     </div>
                   </div>
-                </FadeInUp>
-              ))}
-            </div>
+                ))}
+              </div>
+            </FadeInUp>
+
+            {/* SOCIAL PROOF — Testimonial Carousel */}
+            <FadeInUp className="text-center mb-14">
+              <SectionLabel>Testimonials</SectionLabel>
+              <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15]">
+                What Our{" "}
+                <span className="gold-gradient">Clients Say</span>
+              </h2>
+            </FadeInUp>
+
+            <FadeInUp>
+              <div className="max-w-3xl mx-auto relative">
+                <div className="bg-dark-bg border border-light-border rounded-sm p-8 md:p-12 min-h-[220px]">
+                  <Quote size={32} className="text-muted-gold/30 mb-6" />
+                  <div key={testimonialIndex} className="animate-slide-in">
+                    <p className="text-lg md:text-xl text-warm-cream/70 leading-relaxed italic mb-8">
+                      &ldquo;{testimonials[testimonialIndex].text}&rdquo;
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-muted-gold/20 flex items-center justify-center text-muted-gold font-serif text-xl">
+                        {testimonials[testimonialIndex].name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-warm-cream">{testimonials[testimonialIndex].name}</p>
+                        <p className="text-xs text-warm-grey">{testimonials[testimonialIndex].role}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 mt-4">
+                      {[...Array(5)].map((_, s) => (
+                        <Star key={s} size={14} className="fill-muted-gold text-muted-gold" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Carousel controls */}
+                <div className="flex items-center justify-center gap-4 mt-6">
+                  <button
+                    onClick={() => setTestimonialIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+                    className="w-10 h-10 rounded-full border border-light-border hover:border-muted-gold/40 flex items-center justify-center text-warm-cream/50 hover:text-muted-gold transition-all"
+                    aria-label="Previous testimonial"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className="flex gap-2">
+                    {testimonials.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setTestimonialIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          i === testimonialIndex ? "bg-muted-gold w-6" : "bg-warm-cream/20"
+                        }`}
+                        aria-label={`Go to testimonial ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setTestimonialIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1))}
+                    className="w-10 h-10 rounded-full border border-light-border hover:border-muted-gold/40 flex items-center justify-center text-warm-cream/50 hover:text-muted-gold transition-all"
+                    aria-label="Next testimonial"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </FadeInUp>
           </div>
         </section>
 
         {/* ════════════════════════════════════
-            BOOKING / CONTACT FORM
+            LEAD CAPTURE — Booking Form
             ════════════════════════════════════ */}
-        <section id="contact" className="py-24 md:py-32 bg-cream-light">
+        <section id="contact" className="py-24 md:py-32 bg-dark-bg">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-start">
-              {/* Left — Text */}
-              <FadeInUp>
+            <div className="grid md:grid-cols-5 gap-12 md:gap-20">
+              {/* Left — Text (2/5) */}
+              <FadeInUp className="md:col-span-2">
                 <SectionLabel>Reservations</SectionLabel>
-                <h2 className="font-serif text-4xl md:text-5xl text-charcoal leading-[1.15] mb-8">
-                  Reserve Your{" "}
-                  <span className="gold-gradient">Table</span>
+                <h2 className="font-serif text-4xl md:text-5xl text-warm-cream leading-[1.15] mb-8">
+                  Book Your{" "}
+                  <span className="gold-gradient">Experience</span>
                 </h2>
-                <p className="text-charcoal/65 leading-relaxed mb-10">
-                  Whether it&apos;s an intimate dinner for two or a celebration with friends,
-                  we look forward to welcoming you. Fill in the form and our team will confirm
-                  your reservation within 24 hours.
+                <p className="text-warm-cream/55 leading-relaxed mb-10">
+                  Ready to create an unforgettable event? Tell us about your plans and we&apos;ll craft
+                  a bespoke menu and experience tailored to your needs.
                 </p>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="flex items-start gap-4">
-                    <MapPin size={18} className="text-gold shrink-0 mt-0.5" />
+                    <MapPin size={18} className="text-muted-gold shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-charcoal">Address</p>
-                      <p className="text-sm text-charcoal/55">7 Northumberland Avenue, London, WC2N 5BY</p>
+                      <p className="text-sm font-medium text-warm-cream">Address</p>
+                      <p className="text-sm text-warm-grey">
+                        7 Northumberland Avenue<br />
+                        London, WC2N 5BY, United Kingdom
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <Phone size={18} className="text-gold shrink-0 mt-0.5" />
+                    <Phone size={18} className="text-muted-gold shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-charcoal">Phone</p>
-                      <p className="text-sm text-charcoal/55">+44 20 7946 0430</p>
+                      <p className="text-sm font-medium text-warm-cream">Phone</p>
+                      <p className="text-sm text-warm-grey">+44 20 7946 0430</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <Mail size={18} className="text-gold shrink-0 mt-0.5" />
+                    <Mail size={18} className="text-muted-gold shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-charcoal">Email</p>
-                      <p className="text-sm text-charcoal/55">info@bianco43.com</p>
+                      <p className="text-sm font-medium text-warm-cream">Email</p>
+                      <p className="text-sm text-warm-grey">info@bianco43.com</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <Clock size={18} className="text-gold shrink-0 mt-0.5" />
+                    <Clock size={18} className="text-muted-gold shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-charcoal">Opening Hours</p>
-                      <p className="text-sm text-charcoal/55">Mon—Sat: 12:00—22:30 | Sun: 12:00—21:00</p>
+                      <p className="text-sm font-medium text-warm-cream">Opening Hours</p>
+                      <p className="text-sm text-warm-grey">Mon—Sat: 12:00—22:30 | Sun: 12:00—21:00</p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Social links */}
+                <div className="mt-10">
+                  <p className="text-xs tracking-[0.2em] uppercase text-warm-cream/40 mb-4">Follow Us</p>
+                  <div className="flex gap-3">
+                    {["Instagram", "Facebook", "Twitter", "LinkedIn"].map((name) => (
+                      <a
+                        key={name}
+                        href="#"
+                        className="w-9 h-9 rounded-sm border border-light-border flex items-center justify-center text-warm-cream/30 hover:text-muted-gold hover:border-muted-gold/30 transition-all duration-300"
+                        aria-label={name}
+                      >
+                        {name.charAt(0)}
+                      </a>
+                    ))}
                   </div>
                 </div>
               </FadeInUp>
 
-              {/* Right — Form */}
-              <FadeInUp>
+              {/* Right — Form (3/5) */}
+              <FadeInUp className="md:col-span-3">
                 <form
                   onSubmit={handleSubmit}
-                  className="bg-white rounded-sm border border-border-light p-8 md:p-10"
+                  className="bg-dark-bg border border-light-border rounded-sm p-8 md:p-10"
                 >
-                  <h3 className="font-serif text-2xl text-charcoal mb-6">Make a Reservation</h3>
+                  <h3 className="font-serif text-2xl text-warm-cream mb-6">Request a Booking or Catering Quote</h3>
                   <div className="space-y-5">
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div>
-                        <label htmlFor="name" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                          Name
+                        <label htmlFor="name" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Full Name *
                         </label>
                         <input
                           id="name"
@@ -826,13 +917,13 @@ export default function Home() {
                           required
                           value={formState.name}
                           onChange={handleChange}
-                          className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal placeholder:text-charcoal/30 focus:outline-none focus:border-gold/50 transition-colors"
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream placeholder:text-warm-cream/20 focus:outline-none focus:border-muted-gold/50 transition-colors"
                           placeholder="Your name"
                         />
                       </div>
                       <div>
-                        <label htmlFor="email" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                          Email
+                        <label htmlFor="email" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Email Address *
                         </label>
                         <input
                           id="email"
@@ -841,7 +932,7 @@ export default function Home() {
                           required
                           value={formState.email}
                           onChange={handleChange}
-                          className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal placeholder:text-charcoal/30 focus:outline-none focus:border-gold/50 transition-colors"
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream placeholder:text-warm-cream/20 focus:outline-none focus:border-muted-gold/50 transition-colors"
                           placeholder="your@email.com"
                         />
                       </div>
@@ -849,8 +940,8 @@ export default function Home() {
 
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div>
-                        <label htmlFor="phone" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                          Phone
+                        <label htmlFor="phone" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Phone Number
                         </label>
                         <input
                           id="phone"
@@ -858,48 +949,71 @@ export default function Home() {
                           type="tel"
                           value={formState.phone}
                           onChange={handleChange}
-                          className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal placeholder:text-charcoal/30 focus:outline-none focus:border-gold/50 transition-colors"
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream placeholder:text-warm-cream/20 focus:outline-none focus:border-muted-gold/50 transition-colors"
                           placeholder="+44"
                         />
                       </div>
                       <div>
-                        <label htmlFor="guests" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                          Guests
+                        <label htmlFor="eventDate" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Event Date *
+                        </label>
+                        <input
+                          id="eventDate"
+                          name="eventDate"
+                          type="date"
+                          required
+                          value={formState.eventDate}
+                          onChange={handleChange}
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream focus:outline-none focus:border-muted-gold/50 transition-colors [color-scheme:dark]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="guestCount" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Guest Count *
                         </label>
                         <select
-                          id="guests"
-                          name="guests"
-                          value={formState.guests}
+                          id="guestCount"
+                          name="guestCount"
+                          value={formState.guestCount}
                           onChange={handleChange}
                           required
-                          className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal focus:outline-none focus:border-gold/50 transition-colors"
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream focus:outline-none focus:border-muted-gold/50 transition-colors"
                         >
                           <option value="">Select...</option>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                            <option key={n} value={n}>{n} {n === 1 ? "Guest" : "Guests"}</option>
+                          {[10, 20, 30, 40, 50, 75, 100, 150, 200].map((n) => (
+                            <option key={n} value={n}>{n} Guests</option>
                           ))}
-                          <option value="10+">10+ Guests</option>
+                          <option value="200+">200+ Guests</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="serviceType" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                          Service Desired *
+                        </label>
+                        <select
+                          id="serviceType"
+                          name="serviceType"
+                          value={formState.serviceType}
+                          onChange={handleChange}
+                          required
+                          className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream focus:outline-none focus:border-muted-gold/50 transition-colors"
+                        >
+                          <option value="">Select...</option>
+                          <option value="fine-dining">Fine Dining Reservation</option>
+                          <option value="corporate-catering">Corporate Catering</option>
+                          <option value="private-event">Private Event</option>
+                          <option value="wedding">Wedding Reception</option>
+                          <option value="other">Other</option>
                         </select>
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="date" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                        Preferred Date
-                      </label>
-                      <input
-                        id="date"
-                        name="date"
-                        type="date"
-                        value={formState.date}
-                        onChange={handleChange}
-                        className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal focus:outline-none focus:border-gold/50 transition-colors [color-scheme:light]"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="message" className="block text-xs tracking-[0.15em] uppercase text-charcoal/60 mb-1.5">
-                        Special Requests
+                      <label htmlFor="message" className="block text-xs tracking-[0.15em] uppercase text-warm-grey mb-1.5">
+                        Additional Details
                       </label>
                       <textarea
                         id="message"
@@ -907,20 +1021,20 @@ export default function Home() {
                         rows={3}
                         value={formState.message}
                         onChange={handleChange}
-                        className="w-full border border-border-light bg-cream-light rounded-sm px-4 py-2.5 text-sm text-charcoal placeholder:text-charcoal/30 focus:outline-none focus:border-gold/50 transition-colors resize-none"
-                        placeholder="Dietary requirements, occasion, etc."
+                        className="w-full bg-near-black border border-light-border rounded-sm px-4 py-2.5 text-sm text-warm-cream placeholder:text-warm-cream/20 focus:outline-none focus:border-muted-gold/50 transition-colors resize-none"
+                        placeholder="Dietary requirements, special requests, venue details..."
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-green hover:bg-green-light text-cream text-sm tracking-[0.15em] uppercase font-medium py-3.5 rounded-sm transition-all duration-300 inline-flex items-center justify-center gap-2"
+                      className="w-full bg-muted-gold hover:bg-muted-gold-dark text-near-black text-sm tracking-[0.15em] uppercase font-medium py-3.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_24px_rgba(212,175,55,0.3)] inline-flex items-center justify-center gap-2 shadow-lg shadow-muted-gold/10"
                     >
                       <Mail size={14} />
-                      Send Reservation Request
+                      Send Enquiry
                     </button>
-                    <p className="text-[0.65rem] text-charcoal/40 text-center">
-                      We&apos;ll confirm your booking within 24 hours. No payment is required to reserve.
+                    <p className="text-[0.65rem] text-warm-cream/30 text-center">
+                      We&apos;ll respond within 24 hours. No obligation — let&apos;s discuss your vision.
                     </p>
                   </div>
                 </form>
@@ -933,40 +1047,39 @@ export default function Home() {
       {/* ════════════════════════════════════
           FOOTER
           ════════════════════════════════════ */}
-      <footer className="bg-charcoal text-cream/60">
+      <footer className="bg-near-black border-t border-light-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 md:py-20">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            {/* Brand */}
             <div>
-              <span className="font-serif text-2xl tracking-[0.04em] text-cream">
-                Bianco<span className="text-gold">43</span>
+              <span className="font-serif text-2xl tracking-[0.04em] text-warm-cream">
+                Bianco<span className="text-muted-gold">43</span>
               </span>
-              <p className="mt-4 text-sm leading-relaxed text-cream/45 max-w-xs">
+              <p className="mt-4 text-sm leading-relaxed text-warm-cream/35 max-w-xs">
                 Authentic Italian fine dining and premium catering in the heart of Westminster, London.
+                Founded by Chef Fabrizio Margarita.
               </p>
               <div className="flex gap-3 mt-6">
-                {[Globe, Share].map((Icon, i) => (
+                {["Instagram", "Facebook", "Twitter", "LinkedIn"].map((name) => (
                   <a
-                    key={i}
+                    key={name}
                     href="#"
-                    className="w-9 h-9 rounded-sm border border-cream/10 flex items-center justify-center text-cream/30 hover:text-gold hover:border-gold/30 transition-all duration-300"
-                    aria-label={`Social link ${i}`}
+                    className="w-9 h-9 rounded-sm border border-light-border flex items-center justify-center text-warm-cream/25 hover:text-muted-gold hover:border-muted-gold/30 transition-all duration-300 text-xs"
+                    aria-label={name}
                   >
-                    <Icon size={14} />
+                    {name.charAt(0)}
                   </a>
                 ))}
               </div>
             </div>
 
-            {/* Quick Links */}
             <div>
-              <h4 className="text-xs tracking-[0.2em] uppercase text-cream/70 font-medium mb-5">Quick Links</h4>
+              <h4 className="text-xs tracking-[0.2em] uppercase text-warm-cream/60 font-medium mb-5">Quick Links</h4>
               <ul className="space-y-3">
-                {["Home", "About", "Menu", "Gallery", "Pricing", "Contact"].map((link) => (
+                {["Home", "About", "Services", "Portfolio", "Pricing", "Contact"].map((link) => (
                   <li key={link}>
                     <a
-                      href={`#${link.toLowerCase()}`}
-                      className="text-sm text-cream/45 hover:text-gold transition-colors duration-300"
+                      href={`#${link.toLowerCase() === "home" ? "hero" : link.toLowerCase()}`}
+                      className="text-sm text-warm-cream/35 hover:text-muted-gold transition-colors duration-300"
                     >
                       {link}
                     </a>
@@ -975,49 +1088,41 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Contact */}
             <div>
-              <h4 className="text-xs tracking-[0.2em] uppercase text-cream/70 font-medium mb-5">Contact</h4>
-              <ul className="space-y-3 text-sm text-cream/45">
-                <li>7 Northumberland Ave</li>
+              <h4 className="text-xs tracking-[0.2em] uppercase text-warm-cream/60 font-medium mb-5">Contact</h4>
+              <ul className="space-y-3 text-sm text-warm-cream/35">
+                <li>7 Northumberland Avenue</li>
+                <li>City of Westminster</li>
                 <li>London, WC2N 5BY</li>
-                <li>
-                  <a href="tel:+442079460430" className="hover:text-gold transition-colors">
+                <li className="pt-2">
+                  <a href="tel:+442079460430" className="hover:text-muted-gold transition-colors">
                     +44 20 7946 0430
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:info@bianco43.com" className="hover:text-gold transition-colors">
+                  <a href="mailto:info@bianco43.com" className="hover:text-muted-gold transition-colors">
                     info@bianco43.com
                   </a>
                 </li>
               </ul>
             </div>
 
-            {/* Hours */}
             <div>
-              <h4 className="text-xs tracking-[0.2em] uppercase text-cream/70 font-medium mb-5">Opening Hours</h4>
-              <ul className="space-y-3 text-sm text-cream/45">
-                <li>
-                  <span className="text-cream/60">Mon—Thu:</span> 12:00—22:30
-                </li>
-                <li>
-                  <span className="text-cream/60">Fri—Sat:</span> 12:00—23:00
-                </li>
-                <li>
-                  <span className="text-cream/60">Sunday:</span> 12:00—21:00
-                </li>
+              <h4 className="text-xs tracking-[0.2em] uppercase text-warm-cream/60 font-medium mb-5">Opening Hours</h4>
+              <ul className="space-y-3 text-sm text-warm-cream/35">
+                <li><span className="text-warm-cream/50">Mon—Thu:</span> 12:00—22:30</li>
+                <li><span className="text-warm-cream/50">Fri—Sat:</span> 12:00—23:00</li>
+                <li><span className="text-warm-cream/50">Sunday:</span> 12:00—21:00</li>
               </ul>
-              <p className="mt-4 text-xs text-cream/30 italic">Last seating 45 min before close</p>
+              <p className="mt-4 text-xs text-warm-cream/20 italic">Last seating 45 min before close</p>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="mt-12 pt-8 border-t border-cream/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cream/30">
-            <p>&copy; {new Date().getFullYear()} Bianco43. All rights reserved.</p>
+          <div className="mt-12 pt-8 border-t border-light-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-warm-cream/20">
+            <p>&copy; {new Date().getFullYear()} Bianco43. All rights reserved. City of Westminster, London.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-cream/50 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-cream/50 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-warm-cream/40 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-warm-cream/40 transition-colors">Terms of Service</a>
             </div>
           </div>
         </div>
